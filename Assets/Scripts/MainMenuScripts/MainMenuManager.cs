@@ -1,23 +1,35 @@
 using UnityEngine;
-using UnityEngine.SceneManagement; // Sahne geçişleri için şart
+using UnityEngine.SceneManagement;
 
 public class MainMenuManager : MonoBehaviour
 {
-    [Header("Ayarlar")]
-    [Tooltip("Play butonuna basınca açılacak sahnenin adı")]
-    public string gameSceneName = "GameScene";
+    [Header("Ses Ayarları")]
+    public AudioSource audioSource; // Managers objesindeki Audio Source
+    public AudioClip clickSound;    // Tık sesi dosyası
 
-    // Play Butonu buna bağlanacak
-    public void PlayGame()
+    // Oyunu Başlat Butonuna bağlayacağın fonksiyon
+    public void OyunaBasla()
     {
-        // Hedef sahneyi yükle
-        SceneManager.LoadScene(gameSceneName);
+        // Önce sesi çal
+        PlayClickSound();
+
+        // Sonra (örneğin 0.2 saniye sonra) sahneyi değiştir ki ses duyulsun
+        // Invoke("SahneDegistir", 0.2f); 
+        // VEYA direkt geçiş (Ses biraz kesilebilir ama basittir):
+        SceneManager.LoadScene(1); 
+        // (Not: Sahne numaran 1 ise 1 yaz, build settings'e bak)
     }
 
-    // (Opsiyonel) Çıkış Butonu buna bağlanacak
-    public void QuitGame()
+    // Harici olarak sadece ses çalmak istersen (Başka butonlar için)
+    public void PlayClickSound()
     {
-        Debug.Log("Oyundan Çıkıldı!"); // Editörde çıkış çalışmaz, konsola yazar
-        Application.Quit();
+        // 1. Hafızadan ses ayarını oku (Varsayılan 1 = Açık)
+        bool isSoundOn = PlayerPrefs.GetInt("SoundSetting", 1) == 1;
+
+        // 2. Ses açıksa ve dosyalar tamamsa çal
+        if (isSoundOn && audioSource != null && clickSound != null)
+        {
+            audioSource.PlayOneShot(clickSound);
+        }
     }
 }

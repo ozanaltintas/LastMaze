@@ -1,23 +1,39 @@
 using UnityEngine;
+using UnityEngine.SceneManagement; // Sahne işlemleri gerekirse diye ekli
+using System.Collections;
 
 public class WinZone : MonoBehaviour
 {
-    [Header("Ayarlar")]
-    [Tooltip("Çarpan objenin etiketi ne olmalı? (Genelde 'Player')")]
-    public string targetTag = "Player";
+    [Header("UI Ayarları")]
+    public GameObject winPanel; // Inspector'dan Win Panelini buraya sürükle
 
-    // Bir obje bu alanın İÇİNE girdiğinde çalışır
-    private void OnTriggerEnter2D(Collider2D other)
+    // 2D oyun olduğu için OnTriggerEnter2D kullanıyoruz
+    void OnTriggerEnter2D(Collider2D other)
     {
-        // Giren şey bizim Topumuz mu?
-        if (other.CompareTag(targetTag))
+        // Çarpan nesne Player etiketine sahip mi?
+        if (other.CompareTag("Player"))
         {
             Debug.Log("Oyun Kazanıldı! - BRAVO");
-            
-            // UI Manager'a haber ver
-            if (GameUIManager.Instance != null)
+
+            // 1. ÖNCE SAYACI BUL VE DURDUR
+            GameTimer timerScript = FindObjectOfType<GameTimer>();
+            if (timerScript != null)
             {
-                GameUIManager.Instance.ShowWinScreen();
+                timerScript.Durdur(); // Sayacı durdur ve gizle
+            }
+            else
+            {
+                Debug.LogWarning("Sahnede GameTimer bulunamadı!");
+            }
+
+            // 2. SONRA WIN EKRANINI AÇ
+            if (winPanel != null)
+            {
+                winPanel.SetActive(true);
+            }
+            else
+            {
+                Debug.LogWarning("WinZone scriptine Win Panel atanmamış!");
             }
         }
     }
