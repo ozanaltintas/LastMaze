@@ -7,7 +7,13 @@ public class WinZone : MonoBehaviour
     [Header("UI ve Efektler")]
     public GameObject bravoEkrani;
     public ParticleSystem confettiParticle; 
-    public float beklemeSuresi = 3f;
+    
+    [Header("Zamanlama Ayarları")]
+    [Tooltip("Top girdikten kaç saniye sonra Win ekranı açılsın?")]
+    public float panelAcilmaGecikmesi = 1.0f; 
+
+    [Tooltip("Win ekranı açıldıktan kaç saniye sonra diğer bölüme geçilsin?")]
+    public float sonrakiLevelBeklemeSuresi = 3.0f;
 
     [Header("Ses Ayarları")]
     public AudioSource audioSource; 
@@ -17,30 +23,52 @@ public class WinZone : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        // Eğer zaten kazanıldıysa tekrar çalışma
         if (isWon) return;
 
         if (other.CompareTag("Player"))
         {
             isWon = true;
-            Debug.Log("Oyun Kazanıldı! - BRAVO");
+            Debug.Log("Oyun Kazanıldı!");
 
             // 1. Timer'ı Durdur
-            GameTimer timerScript = FindObjectOfType<GameTimer>();
+            GameTimer timerScript = FindFirstObjectByType<GameTimer>();
             if (timerScript != null)
             {
                 timerScript.Durdur();
             }
 
-            // 2. Konfeti Patlat
-            if (confettiParticle != null) confettiParticle.Play();
+            // 2. Konfetiyi Patlat
+            if (confettiParticle != null)
+            {
+                confettiParticle.Play();
+            }
 
-            // 3. İşlemleri Başlat
+            // 3. LABİRENTİ PATLAT (Shatter Efekti)
+            MazeShatter2D mazeShatter = FindFirstObjectByType<MazeShatter2D>();
+            if (mazeShatter != null)
+            {
+                mazeShatter.Shatter();
+            }
+
+            // 4. TOPU PATLAT (Ball Shatter)
+            // Çarpan objenin (Topun) üzerindeki scripti al ve patlat
+            BallShatter ballShatter = other.GetComponent<BallShatter>();
+            if (ballShatter != null)
+            {
+                ballShatter.Patlat();
+            }
+
+            // 5. Kazanma Sürecini Başlat (Bekleme, Panel, Ses vb.)
             StartCoroutine(WinSequence());
         }
     }
 
     IEnumerator WinSequence()
     {
+        // Patlama efektleri görünsün diye panel açılmadan önce bekle
+        yield return new WaitForSeconds(panelAcilmaGecikmesi);
+
         // --- SESİ ÇAL ---
         if (audioSource != null && winSound != null)
         {
@@ -53,17 +81,35 @@ public class WinZone : MonoBehaviour
             bravoEkrani.SetActive(true);
         }
 
-        // --- İLERLEMEYİ KAYDET (BURASI EKSİKTİ!) ---
+        // --- KAYDET ---
         KaydetVeIlerlet();
 
-        // --- BEKLE ---
-        yield return new WaitForSeconds(beklemeSuresi);
+        // --- SONRAKİ LEVEL İÇİN BEKLE ---
+        yield return new WaitForSeconds(sonrakiLevelBeklemeSuresi);
         
-        // --- SONRAKİ BÖLÜMÜ YÜKLE ---
+        // --- SAHNE YÜKLE ---
+        LoadNextScene();
+    }
+
+    void KaydetVeIlerlet()
+    {
+        int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
+        int reachedLevel = currentSceneIndex + 1;
+
+        // Sadece yeni bir rekorsa kaydet
+        if (reachedLevel > PlayerPrefs.GetInt("ReachedLevel", 1))
+        {
+            PlayerPrefs.SetInt("ReachedLevel", reachedLevel);
+            PlayerPrefs.Save();
+        }
+    }
+
+    void LoadNextScene()
+    {
         int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
         int nextSceneIndex = currentSceneIndex + 1;
 
-        // Eğer sonraki sahne varsa yükle, yoksa başa dön
+        // Sonraki sahne varsa yükle, yoksa başa dön
         if (nextSceneIndex < SceneManager.sceneCountInBuildSettings)
         {
             SceneManager.LoadScene(nextSceneIndex);
@@ -71,26 +117,6 @@ public class WinZone : MonoBehaviour
         else
         {
             SceneManager.LoadScene(0); 
-        }
-    }
-
-    void KaydetVeIlerlet()
-    {
-        // Şu anki sahne indexi (Örn: Scene 1desin)
-        int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
-        
-        // Ulaşılan yeni level (Örn: Scene 2ye geçeceksin, yani Level 2 oldun)
-        int reachedLevel = currentSceneIndex + 1;
-
-        // ÖNEMLİ KONTROL:
-        // Eğer oyuncu zaten Level 5'e gelmişse ve dönüp Level 1'i tekrar oynuyorsa,
-        // kaydını bozmamalıyız (Level 2 yapmamalıyız).
-        // Sadece yeni bir rekora imza attıysa kaydediyoruz.
-        if (reachedLevel > PlayerPrefs.GetInt("ReachedLevel", 1))
-        {
-            PlayerPrefs.SetInt("ReachedLevel", reachedLevel);
-            PlayerPrefs.Save(); // Defteri kapat ve yaz.
-            Debug.Log("YENİ LEVEL KAYDEDİLDİ: " + reachedLevel);
         }
     }
 }
