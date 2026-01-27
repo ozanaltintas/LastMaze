@@ -1,24 +1,23 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.SceneManagement;
+using System.Collections; // IEnumerator için gerekli
 
 public class GameTimer : MonoBehaviour
 {
     [Header("Ayarlar")]
-    public float levelSuresi = 60f; // Başlangıç süresi
+    public float levelSuresi = 60f;
     
     [Header("Durum Kontrolü")]
     public bool oyunBasladi = false; 
     public bool zamanIsliyor = true;
 
     [Header("UI Bağlantıları")]
-    public TextMeshProUGUI sureYazisi; // Timer Text nesnesini buraya sürükle
-    public GameObject loseEkrani;      // Lose Panelini buraya sürükle
+    public TextMeshProUGUI sureYazisi;
+    public GameObject loseEkrani;
 
-    // Start: Oyun açıldığı ilk milisaniye çalışır
     void Start()
     {
-        // Süre yazısını en başta göster (Örn: "60")
         if (sureYazisi != null)
         {
             sureYazisi.text = Mathf.CeilToInt(levelSuresi).ToString();
@@ -28,18 +27,15 @@ public class GameTimer : MonoBehaviour
 
     void Update()
     {
-        // 1. Oyun henüz başlamadıysa bekle
         if (!oyunBasladi)
         {
-            // Ekrana veya herhangi bir UI elemanına dokunuldu mu?
             if (Input.GetMouseButtonDown(0) || Input.touchCount > 0)
             {
-                oyunBasladi = true; // Ve start ver!
+                oyunBasladi = true;
             }
-            return; // Dokunulmadıysa aşağı inme, bekle
+            return;
         }
 
-        // 2. Oyun başladı, geri sayım başlasın
         if (zamanIsliyor)
         {
             levelSuresi -= Time.deltaTime;
@@ -61,28 +57,34 @@ public class GameTimer : MonoBehaviour
     void OyunuKaybet()
     {
         zamanIsliyor = false;
-        
-        // Kaybedince süreyi gizle
         if (sureYazisi != null) sureYazisi.gameObject.SetActive(false);
-
-        if (loseEkrani != null)
-        {
-            loseEkrani.SetActive(true);
-        }
+        if (loseEkrani != null) loseEkrani.SetActive(true);
     }
 
-    // WinZone scripti bu fonksiyonu çağıracak
     public void Durdur()
     {
         zamanIsliyor = false;
-        
-        // Kazanınca süreyi gizle
         if (sureYazisi != null) sureYazisi.gameObject.SetActive(false);
     }
 
+    // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
+
     public void BolumuYenidenBaslat()
     {
+        // Doğrudan yüklemek yerine Coroutine başlatıyoruz
+        StartCoroutine(RestartGecikmeli());
+    }
+
+    IEnumerator RestartGecikmeli()
+    {
+        // Zamanı durdurmuyoruz ki animasyon (Time.deltaTime) çalışmaya devam etsin
         Time.timeScale = 1; 
+        
+        // Önceki adımda yazdığımız dönüş animasyonunun süresi 0.6f civarıydı.
+        // Animasyonun bitmesi için 0.7 saniye bekliyoruz.
+        yield return new WaitForSecondsRealtime(0.4f);
+
+        // Ve şimdi sahneyi yükle
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 }

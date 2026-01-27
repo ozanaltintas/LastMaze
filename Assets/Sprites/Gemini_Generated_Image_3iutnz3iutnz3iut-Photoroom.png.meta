@@ -241,12 +241,12 @@ TextureImporter:
       name: Gemini_Generated_Image_3iutnz3iutnz3iut-Photoroom_2
       rect:
         serializedVersion: 2
-        x: 343
-        y: 492
-        width: 145
-        height: 128
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+        x: 341
+        y: 494
+        width: 147
+        height: 126
+      alignment: 9
+      pivot: {x: 0.23444475, y: -0.0065218}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []

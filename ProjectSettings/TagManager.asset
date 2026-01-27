@@ -2,8 +2,12 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!78 &1
 TagManager:
-  serializedVersion: 2
-  tags: []
+  serializedVersion: 3
+  tags:
+  - UI
+  - LosePanel
+  - WinPanel
+  - Confetti
   layers:
   - Default
   - TransparentFX
@@ -11,7 +15,7 @@ TagManager:
   - 
   - Water
   - UI
-  - 
+  - Confetti
   - 
   - 
   - 
@@ -41,3 +45,17 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: UI
+    uniqueID: 782916465
+    locked: 0
+  - name: LosePanel
+    uniqueID: 2074235677
+    locked: 0
+  - name: WinPanel
+    uniqueID: 1581137533
+    locked: 0
+  - name: Confetti
+    uniqueID: 4230378199
+    locked: 0
+  m_RenderingLayers:
+  - Default

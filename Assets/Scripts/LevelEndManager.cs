@@ -8,24 +8,30 @@ public class LevelEndManager : MonoBehaviour
     public GameObject bravoEkrani;
     public float beklemeSuresi = 3f;
 
+    [Header("Efekt Ayarları")]
+    [SerializeField] private ParticleSystem confettiParticle;
+
     private void OnTriggerEnter(Collider other)
     {
-        // Çarpan şeyin etiketi Player mı?
         if (other.CompareTag("Player"))
         {
-            Debug.Log("1. Adım: Oyuncu bitiş çizgisine girdi."); // KONSOLU KONTROL ET
+            Debug.Log("1. Adım: Oyuncu bitiş çizgisine girdi.");
 
-            // Sahnedeki GameTimer scriptini bulmaya çalış
             GameTimer timerScript = FindObjectOfType<GameTimer>();
-
             if (timerScript != null)
             {
-                Debug.Log("2. Adım: Timer scripti bulundu, durdurma komutu gönderiliyor."); // KONSOLU KONTROL ET
                 timerScript.Durdur();
+            }
+
+            // --- KONFETİ KONTROLÜ ---
+            if (confettiParticle != null)
+            {
+                Debug.Log("3. Adım: Konfeti sistemi bulundu, Oynatılıyor...");
+                confettiParticle.Play();
             }
             else
             {
-                Debug.LogError("HATA: Sahnede GameTimer scripti bulunamadı!"); // EĞER BU ÇIKARSA SORUN BURADA
+                Debug.LogError("HATA: LevelEndManager üzerinde Confetti Particle slotu boş!");
             }
 
             StartCoroutine(LevelBitisSekansi());
