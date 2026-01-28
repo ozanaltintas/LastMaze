@@ -3,70 +3,96 @@ using UnityEngine;
 public class MazeAudioController : MonoBehaviour
 {
     [Header("Bileşenler")]
-    public AudioSource mazeAudioSource; // MP3'ü çalacak kaynak
+    public AudioSource mazeAudioSource; 
 
-    [Header("Ses Seviyesi (Volume)")]
-    [Tooltip("Labirent dönerken ses en fazla ne kadar çıksın? (0.0 ile 1.0 arası)")]
-    [Range(0f, 1f)] // Inspector'da kaydırma çubuğu çıkarır
-    public float maxVolume = 0.5f; // Varsayılan olarak %50 yaptık
+    [Header("Otomatik Kontrol (YENİ)")]
+    [Tooltip("Labirentin dönme scripti buraya otomatik gelir veya sen sürükle.")]
+    public MonoBehaviour hareketScripti; // MazeRotator'ı takip edeceğiz
+
+    [Header("Ses Seviyesi")]
+    [Range(0f, 1f)] public float maxVolume = 0.5f;
 
     [Header("Ses Hızı (Pitch)")]
-    [Tooltip("Labirent dururken veya çok yavaşken ses hızı (Kalın ses)")]
     public float minPitch = 0.8f;
-
-    [Tooltip("Labirent maksimum hızda dönerken ses hızı (İnce ses)")]
     public float maxPitch = 1.4f;
 
     [Header("Geçiş Yumuşaklığı")]
-    [Tooltip("Sesin açılıp kapanma yumuşaklığı")]
     public float smoothSpeed = 5f;
 
     private float _targetVolume;
     private float _targetPitch;
+    private bool _zorlaSustur = false; // Acil durum freni
 
     void Start()
     {
-        // Başlangıçta sesin loop olduğundan ve çaldığından emin olalım
+        // 1. Eğer hareket scriptini atamayı unuttuysan, aynı objede var mı diye bakar
+        if (hareketScripti == null)
+        {
+            // "MazeRotator" isminde script arar, bulamazsa MonoBehaviour olarak alır
+            hareketScripti = GetComponent("MazeRotator") as MonoBehaviour;
+        }
+
+        // 2. Ses kaynağı ayarları
         if (mazeAudioSource != null)
         {
             mazeAudioSource.loop = true;
-            mazeAudioSource.volume = 0f; // Başta sessiz başlasın
-            mazeAudioSource.Play(); // Arka planda çalmaya başlasın
+            mazeAudioSource.volume = 0f;
+            mazeAudioSource.Play();
         }
     }
 
     void Update()
     {
-        // 1. Girdiyi al (Mutlak değer, çünkü sağa da sola da dönse ses çıkmalı)
+        // --- GÜVENLİK KONTROLÜ (YENİ) ---
+        // Eğer hareket scripti (MazeRotator) devre dışı kaldıysa veya obje yok olduysa:
+        if (_zorlaSustur || (hareketScripti != null && !hareketScripti.enabled))
+        {
+            SesiKes(); // Anında sustur
+            return;    // Ve aşağıdakileri yapma
+        }
+        // --------------------------------
+
         float inputMagnitude = 0f;
         
-        // UIWheelController'a güvenli erişim
         if (UIWheelController.Instance != null)
         {
             inputMagnitude = Mathf.Abs(UIWheelController.Instance.HorizontalInput);
         }
 
-        // 2. Hedef Pitch ve Volume değerlerini hesapla
-        if (inputMagnitude > 0.05f) // Çok küçük hareketlerde (Deadzone) ses gelmesin
+        // Hedef değerleri hesapla
+        if (inputMagnitude > 0.05f) 
         {
-            // Pitch: Input gücüne göre incelip kalınlaşsın
             _targetPitch = Mathf.Lerp(minPitch, maxPitch, inputMagnitude);
-            
-            // Volume: Artık 1f değil, senin belirlediğin maxVolume değerine çıkacak
             _targetVolume = maxVolume; 
         }
         else
         {
-            // Duruyorsa pitch en alta, ses tamamen kapalıya
             _targetPitch = minPitch;
             _targetVolume = 0f; 
         }
 
-        // 3. Değerleri yumuşak bir şekilde uygula (Lerp)
+        // Uygula
         if (mazeAudioSource != null)
         {
             mazeAudioSource.pitch = Mathf.Lerp(mazeAudioSource.pitch, _targetPitch, Time.deltaTime * smoothSpeed);
             mazeAudioSource.volume = Mathf.Lerp(mazeAudioSource.volume, _targetVolume, Time.deltaTime * smoothSpeed);
         }
+    }
+
+    // Script dışarıdan (WinZone veya Shatter tarafından) kapatılırsa çalışır
+    void OnDisable()
+    {
+        SesiKes();
+    }
+
+    // Sesi anında kesen yardımcı fonksiyon
+    public void SesiKes()
+    {
+        if (mazeAudioSource != null)
+        {
+            mazeAudioSource.Stop();
+            mazeAudioSource.volume = 0f;
+        }
+        _zorlaSustur = true;
     }
 }
