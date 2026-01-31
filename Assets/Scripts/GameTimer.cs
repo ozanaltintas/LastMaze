@@ -1,7 +1,7 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.SceneManagement;
-using System.Collections; // IEnumerator için gerekli
+using System.Collections; 
 
 public class GameTimer : MonoBehaviour
 {
@@ -16,17 +16,33 @@ public class GameTimer : MonoBehaviour
     public TextMeshProUGUI sureYazisi;
     public GameObject loseEkrani;
 
+    [Header("Gerilim Sesleri")]
+    public AudioSource audioSource; 
+    public AudioClip countdownBeep; 
+    public AudioClip timeUpSound;   
+
+    private int lastSecond; 
+
     void Start()
     {
+        lastSecond = Mathf.CeilToInt(levelSuresi);
+
         if (sureYazisi != null)
         {
-            sureYazisi.text = Mathf.CeilToInt(levelSuresi).ToString();
             sureYazisi.gameObject.SetActive(true);
+            sureYazisi.text = lastSecond.ToString();
+            // --- DÜZELTME: Rengi Siyah Yaptık ---
+            sureYazisi.color = Color.black; 
         }
     }
 
     void Update()
     {
+        if (sureYazisi != null && !oyunBasladi)
+        {
+            sureYazisi.text = Mathf.CeilToInt(levelSuresi).ToString();
+        }
+
         if (!oyunBasladi)
         {
             if (Input.GetMouseButtonDown(0) || Input.touchCount > 0)
@@ -39,52 +55,87 @@ public class GameTimer : MonoBehaviour
         if (zamanIsliyor)
         {
             levelSuresi -= Time.deltaTime;
-            
+            int currentSecond = Mathf.CeilToInt(levelSuresi);
+
+            if (currentSecond != lastSecond)
+            {
+                if (currentSecond <= 3 && currentSecond > 0)
+                {
+                    PlayBeep();
+                    if (sureYazisi != null) sureYazisi.color = Color.red; 
+                }
+                else if (currentSecond <= 0)
+                {
+                    PlayTimeUp();
+                }
+                
+                lastSecond = currentSecond;
+            }
+
             if (sureYazisi != null)
             {
-                sureYazisi.text = Mathf.CeilToInt(levelSuresi).ToString();
+                sureYazisi.text = Mathf.Max(0, currentSecond).ToString();
             }
 
             if (levelSuresi <= 0)
             {
                 levelSuresi = 0;
-                if (sureYazisi != null) sureYazisi.text = "0";
                 OyunuKaybet();
             }
         }
     }
 
+    // --- ZAMAN KUMBARASI SİSTEMİ (YENİ) ---
+    // Bu fonksiyon WinZone tarafından çağrılacak
+    public void SüreyiKumbarayaEkle()
+    {
+        if (levelSuresi > 0)
+        {
+            int kalanSaniye = Mathf.FloorToInt(levelSuresi);
+            int mevcutKumbara = PlayerPrefs.GetInt("TimeBank", 0);
+            
+            PlayerPrefs.SetInt("TimeBank", mevcutKumbara + kalanSaniye);
+            PlayerPrefs.Save();
+            
+            Debug.Log("Kumbaraya eklenen süre: " + kalanSaniye + " | Toplam: " + PlayerPrefs.GetInt("TimeBank"));
+        }
+    }
+
+    void PlayBeep()
+    {
+        if (audioSource != null && countdownBeep != null)
+            audioSource.PlayOneShot(countdownBeep);
+    }
+
+    void PlayTimeUp()
+    {
+        if (audioSource != null && timeUpSound != null)
+            audioSource.PlayOneShot(timeUpSound);
+    }
+
     void OyunuKaybet()
     {
         zamanIsliyor = false;
-        if (sureYazisi != null) sureYazisi.gameObject.SetActive(false);
         if (loseEkrani != null) loseEkrani.SetActive(true);
     }
 
     public void Durdur()
     {
         zamanIsliyor = false;
+        // Bitişe ulaştığında süreyi kumbaraya gönderiyoruz
+        SüreyiKumbarayaEkle();
         if (sureYazisi != null) sureYazisi.gameObject.SetActive(false);
     }
 
-    // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
-
     public void BolumuYenidenBaslat()
     {
-        // Doğrudan yüklemek yerine Coroutine başlatıyoruz
         StartCoroutine(RestartGecikmeli());
     }
 
     IEnumerator RestartGecikmeli()
     {
-        // Zamanı durdurmuyoruz ki animasyon (Time.deltaTime) çalışmaya devam etsin
         Time.timeScale = 1; 
-        
-        // Önceki adımda yazdığımız dönüş animasyonunun süresi 0.6f civarıydı.
-        // Animasyonun bitmesi için 0.7 saniye bekliyoruz.
         yield return new WaitForSecondsRealtime(0.4f);
-
-        // Ve şimdi sahneyi yükle
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 }
