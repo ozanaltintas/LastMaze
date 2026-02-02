@@ -84,7 +84,7 @@ public class GameTimer : MonoBehaviour
         }
     }
 
-    // --- GÜNCELLENEN KISIM ---
+    // --- ZAMAN KUMBARASI VE ANİMASYON TETİKLEYİCİSİ ---
     public void SüreyiKumbarayaEkle()
     {
         if (levelSuresi > 0)
@@ -92,16 +92,39 @@ public class GameTimer : MonoBehaviour
             int kalanSaniye = Mathf.FloorToInt(levelSuresi);
             int mevcutKumbara = PlayerPrefs.GetInt("TimeBank", 0);
             
-            // 1. Toplamı Kaydet
+            // 1. Veriyi Kaydet
             PlayerPrefs.SetInt("TimeBank", mevcutKumbara + kalanSaniye);
-            
-            // 2. YENİ: Bu tur ne kadar kazandığını ayrıca kaydet (Animasyon için lazım)
-            PlayerPrefs.SetInt("SonKazanilan", kalanSaniye);
-            
+            // Ana menü animasyonu için bunu da kaydediyoruz
+            PlayerPrefs.SetInt("SonKazanilan", kalanSaniye); 
             PlayerPrefs.Save();
             
-            Debug.Log("Kazanılan: " + kalanSaniye + " Toplam: " + (mevcutKumbara + kalanSaniye));
+            // 2. YENİ: Oyun İçi Görsel Animasyonu Başlat (DOTween)
+            if (InGameTimeBank.Instance != null)
+            {
+                InGameTimeBank.Instance.AnimasyonuBaslat(kalanSaniye);
+            }
         }
+    }
+    
+    // --- YENİ: ZAMAN SATIN ALMA İÇİN ---
+    public void ZamanEkle(float saniye)
+    {
+        if (!zamanIsliyor) return; 
+
+        levelSuresi += saniye;
+        
+        if (sureYazisi != null)
+        {
+            sureYazisi.text = Mathf.CeilToInt(levelSuresi).ToString();
+            StartCoroutine(YaziEfekti());
+        }
+    }
+
+    IEnumerator YaziEfekti()
+    {
+        sureYazisi.color = Color.green; 
+        yield return new WaitForSeconds(0.5f);
+        sureYazisi.color = Color.black; 
     }
 
     void PlayBeep()
