@@ -92,13 +92,14 @@ public class GameTimer : MonoBehaviour
             int kalanSaniye = Mathf.FloorToInt(levelSuresi);
             int mevcutKumbara = PlayerPrefs.GetInt("TimeBank", 0);
             
-            // 1. Veriyi Kaydet
+            // 1. Veriyi Kaydet (Toplam Kumbara)
             PlayerPrefs.SetInt("TimeBank", mevcutKumbara + kalanSaniye);
-            // Ana menü animasyonu için bunu da kaydediyoruz
+            
+            // 2. Ana menü animasyonu için bunu da kaydediyoruz
             PlayerPrefs.SetInt("SonKazanilan", kalanSaniye); 
             PlayerPrefs.Save();
             
-            // 2. YENİ: Oyun İçi Görsel Animasyonu Başlat (DOTween)
+            // 3. Oyun İçi Görsel Animasyonu Başlat (DOTween)
             if (InGameTimeBank.Instance != null)
             {
                 InGameTimeBank.Instance.AnimasyonuBaslat(kalanSaniye);
@@ -106,11 +107,10 @@ public class GameTimer : MonoBehaviour
         }
     }
     
-    // --- YENİ: ZAMAN SATIN ALMA İÇİN ---
+    // --- ZAMAN EKLEME (MARKET VEYA ÇARK İÇİN) ---
     public void ZamanEkle(float saniye)
     {
-        if (!zamanIsliyor) return; 
-
+        // Zaman işliyor olsa da olmasa da eklenebilsin (Lose ekranındayken de lazım)
         levelSuresi += saniye;
         
         if (sureYazisi != null)
@@ -120,11 +120,35 @@ public class GameTimer : MonoBehaviour
         }
     }
 
+    // --- ÇARKIFELEK SONRASI OYUNU DEVAM ETTİR ---
+    public void OyunuDevamEttir()
+    {
+        // 1. Lose ekranını kapat
+        if (loseEkrani != null) loseEkrani.SetActive(false);
+
+        // 2. Zamanı tekrar akıtmaya başla
+        zamanIsliyor = true;
+        oyunBasladi = true; 
+
+        // 3. Yazı rengini düzelt (Kırmızı kalmış olabilir)
+        if (sureYazisi != null) sureYazisi.color = Color.black;
+
+        // 4. Müzik veya TimeScale durduysa burada açabilirsin
+        Time.timeScale = 1; 
+        
+        Debug.Log("Oyun Devam Ediyor!");
+    }
+
     IEnumerator YaziEfekti()
     {
-        sureYazisi.color = Color.green; 
-        yield return new WaitForSeconds(0.5f);
-        sureYazisi.color = Color.black; 
+        if (sureYazisi != null)
+        {
+            sureYazisi.color = Color.green; 
+            yield return new WaitForSeconds(0.5f);
+            // Eğer süre kritikse kırmızı yap, değilse siyah
+            if (levelSuresi <= 3) sureYazisi.color = Color.red;
+            else sureYazisi.color = Color.black; 
+        }
     }
 
     void PlayBeep()
@@ -143,13 +167,15 @@ public class GameTimer : MonoBehaviour
     {
         zamanIsliyor = false;
         if (loseEkrani != null) loseEkrani.SetActive(true);
+        // İstersen burada Time.timeScale = 0 yapabilirsin
     }
 
     public void Durdur()
     {
         zamanIsliyor = false;
         SüreyiKumbarayaEkle();
-        if (sureYazisi != null) sureYazisi.gameObject.SetActive(false);
+        // Kazandığında süre yazısını kapatmak istersen burayı aç:
+        // if (sureYazisi != null) sureYazisi.gameObject.SetActive(false);
     }
 
     public void BolumuYenidenBaslat()

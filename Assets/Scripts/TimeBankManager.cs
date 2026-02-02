@@ -1,6 +1,8 @@
 using UnityEngine;
 using TMPro;
 using System.Collections;
+// DOTween varsa kullanabilirsin, yoksa Coroutine iş görür. 
+// Şimdilik Coroutine (saf C#) ile yapıyoruz ki hata almayasın.
 
 public class TimeBankManager : MonoBehaviour
 {
@@ -10,10 +12,11 @@ public class TimeBankManager : MonoBehaviour
     public TextMeshProUGUI kumbaraText; 
 
     [Header("Animasyon Ayarı")]
-    public float animasyonSuresi = 1.5f; // Sayılar ne kadar sürede artsın?
+    public float animasyonSuresi = 1.0f; // Sayılar ne kadar sürede artsın?
 
     private int hedefDeger;
     private int baslangicDegeri;
+    private int guncelGosterilenDeger;
 
     void Awake()
     {
@@ -27,39 +30,45 @@ public class TimeBankManager : MonoBehaviour
         hedefDeger = PlayerPrefs.GetInt("TimeBank", 0);
         int sonKazanilan = PlayerPrefs.GetInt("SonKazanilan", 0);
 
-        // 2. Başlangıç Değerini Hesapla (Toplam - SonKazanılan)
+        // 2. Başlangıç Değerini Hesapla
         baslangicDegeri = hedefDeger - sonKazanilan;
-
-        // Eksiye düşme kontrolü (olur da veri silinirse)
         if (baslangicDegeri < 0) baslangicDegeri = 0;
+        
+        guncelGosterilenDeger = baslangicDegeri;
 
-        // 3. Ekrana önce başlangıç değerini yaz (Örn: 100)
-        if (kumbaraText != null)
-            kumbaraText.text = baslangicDegeri.ToString();
+        // 3. Ekrana önce başlangıç değerini yaz
+        UpdateUI();
 
         // 4. Eğer yeni bir kazanç varsa animasyonu başlat
         if (sonKazanilan > 0)
         {
-            StartCoroutine(SayacAnimasyonu());
+            StartCoroutine(SayacAnimasyonu(baslangicDegeri, hedefDeger));
             
-            // Animasyon bir kere oynadıktan sonra "SonKazanilan"ı sıfırla.
-            // Böylece oyunu kapatıp açarsan tekrar animasyon oynamaz.
+            // Animasyon oynadı, artık sıfırla
             PlayerPrefs.SetInt("SonKazanilan", 0);
             PlayerPrefs.Save();
         }
         else
         {
             // Kazanç yoksa direkt hedefi yaz
-             if (kumbaraText != null)
-                kumbaraText.text = hedefDeger.ToString();
+            guncelGosterilenDeger = hedefDeger;
+            UpdateUI();
         }
     }
 
-    IEnumerator SayacAnimasyonu()
+    // --- İŞTE ÇARKIFELEK SCRIPTININ ARADIĞI FONKSİYON ---
+    public void SayaciGuncelle()
     {
-        // Sahne yüklenir yüklenmez başlamasın, yarım saniye nefes alsın (göz görsün)
-        yield return new WaitForSeconds(0.5f);
+        // Yeni hafızayı oku (Çarkıfelek parayı kestiği için değer değişti)
+        int yeniHedef = PlayerPrefs.GetInt("TimeBank", 0);
+        
+        // Şu an ekranda yazan değerden yeni değere doğru animasyon başlat
+        StopAllCoroutines();
+        StartCoroutine(SayacAnimasyonu(guncelGosterilenDeger, yeniHedef));
+    }
 
+    IEnumerator SayacAnimasyonu(int baslangic, int bitis)
+    {
         float gecenSure = 0;
         
         while (gecenSure < animasyonSuresi)
@@ -67,19 +76,24 @@ public class TimeBankManager : MonoBehaviour
             gecenSure += Time.deltaTime;
             float t = gecenSure / animasyonSuresi;
             
-            // Animasyon eğrisi (yavaşlayarak bitmesi için SmoothStep)
+            // Animasyon eğrisi (Yumuşak geçiş)
             t = Mathf.SmoothStep(0, 1, t);
 
-            int anlikDeger = (int)Mathf.Lerp(baslangicDegeri, hedefDeger, t);
-            
-            if (kumbaraText != null)
-                kumbaraText.text = anlikDeger.ToString();
+            guncelGosterilenDeger = (int)Mathf.Lerp(baslangic, bitis, t);
+            UpdateUI();
             
             yield return null;
         }
 
         // Garanti olsun diye döngü bitince net değeri yaz
+        guncelGosterilenDeger = bitis;
+        hedefDeger = bitis; // Hedef değerimizi de güncelleyelim
+        UpdateUI();
+    }
+
+    void UpdateUI()
+    {
         if (kumbaraText != null)
-            kumbaraText.text = hedefDeger.ToString();
+            kumbaraText.text = guncelGosterilenDeger.ToString();
     }
 }

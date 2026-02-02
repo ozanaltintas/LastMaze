@@ -95,7 +95,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bravoEkrani: {fileID: 0}
   confettiParticle: {fileID: 0}
-  panelAcilmaGecikmesi: 2
+  panelAcilmaGecikmesi: 2.5
   sonrakiLevelBeklemeSuresi: 2
   audioSource: {fileID: 6817483762393092505}
   winSound: {fileID: 8300000, guid: b9fff3cd5cb992841a74d820e2467805, type: 3}
