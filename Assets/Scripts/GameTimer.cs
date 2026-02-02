@@ -31,7 +31,6 @@ public class GameTimer : MonoBehaviour
         {
             sureYazisi.gameObject.SetActive(true);
             sureYazisi.text = lastSecond.ToString();
-            // --- DÜZELTME: Rengi Siyah Yaptık ---
             sureYazisi.color = Color.black; 
         }
     }
@@ -85,8 +84,7 @@ public class GameTimer : MonoBehaviour
         }
     }
 
-    // --- ZAMAN KUMBARASI SİSTEMİ (YENİ) ---
-    // Bu fonksiyon WinZone tarafından çağrılacak
+    // --- GÜNCELLENEN KISIM ---
     public void SüreyiKumbarayaEkle()
     {
         if (levelSuresi > 0)
@@ -94,10 +92,15 @@ public class GameTimer : MonoBehaviour
             int kalanSaniye = Mathf.FloorToInt(levelSuresi);
             int mevcutKumbara = PlayerPrefs.GetInt("TimeBank", 0);
             
+            // 1. Toplamı Kaydet
             PlayerPrefs.SetInt("TimeBank", mevcutKumbara + kalanSaniye);
+            
+            // 2. YENİ: Bu tur ne kadar kazandığını ayrıca kaydet (Animasyon için lazım)
+            PlayerPrefs.SetInt("SonKazanilan", kalanSaniye);
+            
             PlayerPrefs.Save();
             
-            Debug.Log("Kumbaraya eklenen süre: " + kalanSaniye + " | Toplam: " + PlayerPrefs.GetInt("TimeBank"));
+            Debug.Log("Kazanılan: " + kalanSaniye + " Toplam: " + (mevcutKumbara + kalanSaniye));
         }
     }
 
@@ -122,7 +125,6 @@ public class GameTimer : MonoBehaviour
     public void Durdur()
     {
         zamanIsliyor = false;
-        // Bitişe ulaştığında süreyi kumbaraya gönderiyoruz
         SüreyiKumbarayaEkle();
         if (sureYazisi != null) sureYazisi.gameObject.SetActive(false);
     }
