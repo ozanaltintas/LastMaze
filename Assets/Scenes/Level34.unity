@@ -1856,7 +1856,7 @@ PrefabInstance:
       objectReference: {fileID: 388745693}
     - target: {fileID: 6944032027903701621, guid: 2ab7b629794f26b4fa4c34c27adddf2f, type: 3}
       propertyPath: levelSuresi
-      value: 40
+      value: 25
       objectReference: {fileID: 0}
     - target: {fileID: 9039963575048810593, guid: 2ab7b629794f26b4fa4c34c27adddf2f, type: 3}
       propertyPath: winScreenPanel
