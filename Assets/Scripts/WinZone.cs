@@ -29,6 +29,12 @@ public class WinZone : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             isWon = true;
+
+            // --- HAPTIC FEEDBACK (Titreşim) ---
+            // Oyuncu girdiği an o minik "pıt" hissini ver
+            HapticManager.LightFeedback();
+            // ----------------------------------
+
             Debug.Log("Oyun Kazanıldı!");
 
             // 1. Timer'ı Durdur

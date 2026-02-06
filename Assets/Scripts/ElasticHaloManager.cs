@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using System.Collections.Generic; // Liste için gerekli
 
 public class ElasticHaloManager : MonoBehaviour
 {
@@ -9,9 +10,13 @@ public class ElasticHaloManager : MonoBehaviour
     [SerializeField] private RectTransform haloTransform;
     [SerializeField] private GameObject settingsWheelObject;
 
+    [Header("Target Filtering (YENİ)")]
+    [Tooltip("Halo sadece bu listedeki objelere gider. İzin verilen butonları buraya sürükleyin.")]
+    public List<GameObject> allowedButtons; 
+
     [Header("Elastic Settings")]
-    [SerializeField] private float posSmoothTime = 0.05f; // Hızlandırıldı (0.1f -> 0.05f)
-    [SerializeField] private float sizeSmoothTime = 0.08f; // Hızlandırıldı (0.12f -> 0.08f)
+    [SerializeField] private float posSmoothTime = 0.05f; 
+    [SerializeField] private float sizeSmoothTime = 0.08f; 
     [SerializeField] private float stretchIntensity = 0.3f;
     [SerializeField] private Vector2 padding = new Vector2(20, 20);
 
@@ -27,56 +32,68 @@ public class ElasticHaloManager : MonoBehaviour
 
     void LateUpdate()
     {
-        // 1. Menü kapalıysa veya referans yoksa kapat
+        // 1. Menü Kapalı Kontrolü
         if (menuController == null || !menuController.IsMenuOpen())
         {
-            if (haloTransform.gameObject.activeSelf) haloTransform.gameObject.SetActive(false);
+            if (haloTransform != null && haloTransform.gameObject.activeSelf) 
+                haloTransform.gameObject.SetActive(false);
             targetRect = null;
             return;
         }
 
+        // 2. Anlık Seçili Objeyi Al
         GameObject currentSelected = EventSystem.current.currentSelectedGameObject;
-
-        // 2. Çark seçiliyse halo'yu gizle (yanıp sönmeyi önler)
-        if (currentSelected == settingsWheelObject)
-        {
-            if (haloTransform.gameObject.activeSelf) haloTransform.gameObject.SetActive(false);
-            return;
-        }
-
-        // 3. Geçerli bir seçim varsa hedefi güncelle
+        
+        // 3. FİLTRELEME: Seçili obje "İzin Verilenler" listesinde mi?
+        bool isAllowed = false;
+        
         if (currentSelected != null)
         {
-            RectTransform newTarget = currentSelected.GetComponent<RectTransform>();
-            if (newTarget != null)
+            // Eğer liste boşsa hepsine izin ver (Hata önlemek için), doluysa sadece listedekilere
+            if (allowedButtons.Count == 0 || allowedButtons.Contains(currentSelected))
             {
-                targetRect = newTarget;
-                if (!haloTransform.gameObject.activeSelf) haloTransform.gameObject.SetActive(true);
+                isAllowed = true;
+                targetRect = currentSelected.GetComponent<RectTransform>();
             }
         }
 
-        // 4. Takip Mantığı
-        if (targetRect != null && haloTransform.gameObject.activeSelf)
+        // 4. Duruma Göre Halo'yu Aç/Kapat ve Hareket Ettir
+        if (isAllowed && targetRect != null)
         {
-            HandleElasticMovement();
+            // Halo kapalıysa aç
+            if (!haloTransform.gameObject.activeSelf) 
+            {
+                haloTransform.gameObject.SetActive(true);
+                // İlk açılışta ışınlan (animasyon bozulmasın)
+                haloTransform.position = targetRect.position;
+                haloTransform.sizeDelta = targetRect.sizeDelta + padding;
+                lastPosition = haloTransform.position;
+            }
+
+            MoveAndStretchHalo();
+        }
+        else
+        {
+            // İzin verilmeyen bir şey seçildiyse veya seçim yoksa Halo'yu gizle
+            if (haloTransform.gameObject.activeSelf) 
+                haloTransform.gameObject.SetActive(false);
         }
     }
 
-    void HandleElasticMovement()
+    void MoveAndStretchHalo()
     {
-        // Buton hareket halindeyken (pıt pıt açılırken) bile anlık pozisyonu al
+        // SmoothDamp: Hedefe kilitlenmeyi sağlar
         Vector3 targetPos = targetRect.position;
         Vector2 targetSize = targetRect.sizeDelta + padding;
 
-        // SmoothDamp: Hedefe kilitlenmeyi sağlar
         haloTransform.position = Vector3.SmoothDamp(haloTransform.position, targetPos, ref posVelocity, posSmoothTime);
         haloTransform.sizeDelta = Vector2.SmoothDamp(haloTransform.sizeDelta, targetSize, ref sizeVelocity, sizeSmoothTime);
 
-        // Hız bazlı esneme hesaplama
+        // Hız bazlı esneme (Squash & Stretch)
         float movementSpeed = (haloTransform.position - lastPosition).magnitude / Time.deltaTime;
         Vector3 moveDir = (haloTransform.position - lastPosition).normalized;
 
-        if (movementSpeed > 5f) // Tolerans düşürüldü, daha hassas tepki verir
+        if (movementSpeed > 5f) 
         {
             float stretch = 1f + (movementSpeed * stretchIntensity * 0.0005f);
             float squash = 1f / stretch;

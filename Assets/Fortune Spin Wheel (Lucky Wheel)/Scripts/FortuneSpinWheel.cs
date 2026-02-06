@@ -113,7 +113,7 @@ namespace FortuneSpinWheel
             riskButton.gameObject.SetActive(true);
             int bakiye = PlayerPrefs.GetInt("TimeBank", 0);
             riskButton.interactable = (bakiye >= spinCost);
-            if (riskCostText) riskCostText.text = "RISK (" + spinCost + " Sn)";
+            if (riskCostText) riskCostText.text = "RISK (" + spinCost + " Seconds)";
         }
 
         void RiskButonunaBasildi()
